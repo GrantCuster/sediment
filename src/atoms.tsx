@@ -13,6 +13,8 @@ export type LayerType = {
   id: string;
   cellSize: number;
   canvas: HTMLCanvasElement;
+  offsetX: number | null;
+  offsetY: number | null;
 };
 const firstId = uuid();
 export const LayerMapAtom = atom<Record<string, LayerType>>({
@@ -20,6 +22,9 @@ export const LayerMapAtom = atom<Record<string, LayerType>>({
     id: firstId,
     cellSize: 64,
     canvas: document.createElement("canvas"),
+    offsetX: null,
+    offsetY: null,
   },
 });
 export const LayerIdsAtom = atom<string[]>([firstId]);
+export const RenderBumpAtom = atom(0);

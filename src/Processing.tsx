@@ -2,7 +2,64 @@ export function processLayer(
   sourceCanvas: HTMLCanvasElement,
   destinationCanvas: HTMLCanvasElement,
   cellSize: number,
+  _xOffset: number | null,
+  _yOffset: number | null,
 ) {
+  const stx = sourceCanvas.getContext("2d")!;
+  const dtx = destinationCanvas.getContext("2d")!;
+  const imageWidth = sourceCanvas.width;
+  const imageHeight = sourceCanvas.height;
+  destinationCanvas.width = imageWidth;
+  destinationCanvas.height = imageHeight;
+  let rows = Math.ceil(sourceCanvas.height / cellSize);
+  let cols = Math.ceil(sourceCanvas.width / cellSize);
+
+  const xOffset = _xOffset !== null
+    ? _xOffset
+    : Math.floor((cols * cellSize - imageWidth) / 2);
+  const yOffset = _yOffset !== null
+    ? _yOffset
+    : Math.floor((rows * cellSize - imageHeight) / 2);
+
+  rows = Math.ceil((sourceCanvas.height + yOffset) / cellSize);
+  cols = Math.ceil((sourceCanvas.width + xOffset) / cellSize);
+
+  const imageDataContainer = stx.getImageData(0, 0, imageWidth, imageHeight);
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      let totalR = 0;
+      let totalG = 0;
+      let totalB = 0;
+      let count = 0;
+      for (let r = 0; r < cellSize; r++) {
+        const actualY = row * cellSize + r - yOffset;
+        const rowCheck = actualY >= 0 && actualY < imageHeight;
+        for (let c = 0; c < cellSize; c++) {
+          const actualX = col * cellSize + c - xOffset;
+          const colCheck = actualX >= 0 && actualX < imageWidth;
+          if (rowCheck && colCheck) {
+            const idx = (actualY * imageWidth + actualX) * 4;
+            totalR += imageDataContainer.data[idx];
+            totalG += imageDataContainer.data[idx + 1];
+            totalB += imageDataContainer.data[idx + 2];
+            count++;
+          }
+        }
+      }
+      const avgR = totalR / count;
+      const avgG = totalG / count;
+      const avgB = totalB / count;
+      dtx.fillStyle = `rgb(${avgR}, ${avgG}, ${avgB})`;
+      dtx.fillRect(
+        col * cellSize - xOffset,
+        row * cellSize - yOffset,
+        cellSize,
+        cellSize,
+      );
+    }
+  }
+
   // const bufferCanvas = document.createElement("canvas");
   // bufferCanvas.width = 16;
   // bufferCanvas.height = 16;
@@ -37,7 +94,7 @@ export function processLayer(
     // side: number,
     // ctx: canvasrenderingcontext2d,
     // image: htmlimageelement,
-    const ctx = sourceCanvas.getContext('2d')!;
+    const ctx = sourceCanvas.getContext("2d")!;
     const imageDataContainer = ctx.getImageData(
       0,
       0,
