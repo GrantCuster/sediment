@@ -15,6 +15,7 @@ export type LayerType = {
   canvas: HTMLCanvasElement;
   offsetX: number | null;
   offsetY: number | null;
+  rgbThreshold: number
 };
 const firstId = uuid();
 export const LayerMapAtom = atom<Record<string, LayerType>>({
@@ -24,6 +25,7 @@ export const LayerMapAtom = atom<Record<string, LayerType>>({
     canvas: document.createElement("canvas"),
     offsetX: null,
     offsetY: null,
+    rgbThreshold: 40,
   },
 });
 export const LayerIdsAtom = atom<string[]>([firstId]);

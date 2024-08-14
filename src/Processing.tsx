@@ -4,6 +4,7 @@ export function processLayer(
   cellSize: number,
   _xOffset: number | null,
   _yOffset: number | null,
+  rgbThreshold: number,
 ) {
   const stx = sourceCanvas.getContext("2d")!;
   const dtx = destinationCanvas.getContext("2d")!;
@@ -14,12 +15,14 @@ export function processLayer(
   let rows = Math.ceil(sourceCanvas.height / cellSize);
   let cols = Math.ceil(sourceCanvas.width / cellSize);
 
-  const xOffset = _xOffset !== null
-    ? _xOffset
-    : Math.floor((cols * cellSize - imageWidth) / 2);
-  const yOffset = _yOffset !== null
-    ? _yOffset
-    : Math.floor((rows * cellSize - imageHeight) / 2);
+  const xOffset =
+    _xOffset !== null
+      ? _xOffset
+      : Math.floor((cols * cellSize - imageWidth) / 2);
+  const yOffset =
+    _yOffset !== null
+      ? _yOffset
+      : Math.floor((rows * cellSize - imageHeight) / 2);
 
   rows = Math.ceil((sourceCanvas.height + yOffset) / cellSize);
   cols = Math.ceil((sourceCanvas.width + xOffset) / cellSize);
@@ -50,13 +53,43 @@ export function processLayer(
       const avgR = totalR / count;
       const avgG = totalG / count;
       const avgB = totalB / count;
-      dtx.fillStyle = `rgb(${avgR}, ${avgG}, ${avgB})`;
-      dtx.fillRect(
-        col * cellSize - xOffset,
-        row * cellSize - yOffset,
-        cellSize,
-        cellSize,
-      );
+      let drawIt = true;
+      if (rgbThreshold > 0) {
+        let lossR = 0;
+        let lossG = 0;
+        let lossB = 0;
+        let count = 0;
+        for (let r = 0; r < cellSize; r++) {
+          const actualY = row * cellSize + r - yOffset;
+          const rowCheck = actualY >= 0 && actualY < imageHeight;
+          for (let c = 0; c < cellSize; c++) {
+            const actualX = col * cellSize + c - xOffset;
+            const colCheck = actualX >= 0 && actualX < imageWidth;
+            if (rowCheck && colCheck) {
+              const idx = (actualY * imageWidth + actualX) * 4;
+              lossR += Math.abs(imageDataContainer.data[idx] - avgR);
+              lossG += Math.abs(imageDataContainer.data[idx + 1] - avgG);
+              lossB += Math.abs(imageDataContainer.data[idx + 2] - avgB);
+              count++;
+            }
+          }
+        }
+        const avgLossR = lossR / count;
+        const avgLossG = lossG / count;
+        const avgLossB = lossB / count;
+        if ((avgLossR + avgLossG + avgLossB) / 3 < rgbThreshold) {
+          drawIt = false;
+        }
+      }
+      if (drawIt) {
+        dtx.fillStyle = `rgb(${avgR}, ${avgG}, ${avgB})`;
+        dtx.fillRect(
+          col * cellSize - xOffset,
+          row * cellSize - yOffset,
+          cellSize,
+          cellSize,
+        );
+      }
     }
   }
 

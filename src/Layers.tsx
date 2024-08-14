@@ -9,17 +9,42 @@ import {
 } from "./atoms";
 import { useEffect, useRef } from "react";
 import { processLayer } from "./Processing";
+import { v4 as uuid } from "uuid";
 
 export function Layers() {
   const [layerIds] = useAtom(LayerIdsAtom);
 
   return (
-    <div>
+    <div className="border-l border-white overflow-auto h-full">
       {layerIds.map((id) => (
         <Layer key={id} id={id} />
       ))}
+      <AddLayer />
     </div>
   );
+}
+
+export function AddLayer() {
+  const [, setLayerIds] = useAtom(LayerIdsAtom);
+  const [, setLayerMap] = useAtom(LayerMapAtom);
+
+  function addLayer() {
+    const id = uuid();
+    setLayerIds((prev) => [...prev, id]);
+    setLayerMap((prev) => ({
+      ...prev,
+      [id]: {
+        id,
+        cellSize: 64,
+        canvas: document.createElement("canvas"),
+        offsetX: null,
+        offsetY: null,
+        rgbThreshold: 40,
+      },
+    }));
+  }
+
+  return <button onClick={addLayer}>Add Layer</button>;
 }
 
 export function Layer({ id }: { id: string }) {
@@ -43,16 +68,14 @@ export function Layer({ id }: { id: string }) {
 
   useEffect(() => {
     const canvas = canvasRef.current!;
-    console.log(canvasRef.current);
-    console.log("eh");
     if (canvas) {
-      console.log("what");
       processLayer(
         sourceCanvas,
         layer.canvas,
         layer.cellSize,
         layer.offsetX,
         layer.offsetY,
+        layer.rgbThreshold,
       );
 
       const ctx = canvas.getContext("2d")!;
@@ -77,10 +100,10 @@ export function Layer({ id }: { id: string }) {
   );
 
   return layer ? (
-    <div>
+    <div className="border-b border-white">
       <canvas className="max-w-full" ref={canvasRef} />
-      <div>{layer.cellSize}</div>
-      <div>
+      <div className="flex items-center gap-1">
+        <div>Size</div>
         <input
           type="range"
           min="1"
@@ -88,6 +111,7 @@ export function Layer({ id }: { id: string }) {
           value={layer.cellSize}
           onChange={(e) => updateLayer({ cellSize: parseInt(e.target.value) })}
         />
+        <div>{layer.cellSize}</div>
       </div>
       <div className="flex items-center gap-1">
         <div>Offset x</div>
@@ -140,6 +164,21 @@ export function Layer({ id }: { id: string }) {
         ) : (
           <div>auto {autoOffsetY}</div>
         )}
+      </div>
+      <div className="flex items-center gap-1">
+        <div>RGBT</div>
+        <div className="flex gap-1">
+          <input
+            type="range"
+            min="0"
+            max="255"
+            value={layer.rgbThreshold as number}
+            onChange={(e) =>
+              updateLayer({ rgbThreshold: parseInt(e.target.value) })
+            }
+          />
+          <div>{layer.rgbThreshold}</div>
+        </div>
       </div>
     </div>
   ) : null;
